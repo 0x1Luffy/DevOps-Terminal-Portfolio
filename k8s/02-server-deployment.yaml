@@ -1,0 +1,151 @@
+# ─────────────────────────────────────────────────────────────────
+#  PORTFOLIO SERVER — Deployment + Service
+#
+#  What this does:
+#    Runs the Node.js backend (Express + Socket.IO).
+#    This is the "brain" — it receives commands from the browser
+#    terminal, processes them, and (when SSH sandbox is triggered)
+#    spawns an isolated Docker container for the user to explore.
+#
+#  Why it needs the Docker socket:
+#    The server uses dockerode (a Node.js library) to call the
+#    Docker daemon on the host VM and create sandbox containers.
+#    Mounting /var/run/docker.sock gives the server that ability.
+#
+#  Security note on the Docker socket:
+#    Access to the Docker socket is powerful — so the server Pod
+#    runs as a non-root user and we use a ServiceAccount with no
+#    extra K8s permissions. The sandbox containers themselves are
+#    further locked down (see containerManager.js).
+# ─────────────────────────────────────────────────────────────────
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portfolio-server
+  namespace: portfolio
+  labels:
+    app: portfolio-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: portfolio-server
+  template:
+    metadata:
+      labels:
+        app: portfolio-server
+    spec:
+      # Run as non-root user inside the container
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+
+      containers:
+        - name: server
+          # ── CHANGE THIS ──────────────────────────────────
+          # After you push your image (see README-SETUP.md Step 4),
+          # replace YOUR_GITHUB_USERNAME with your GitHub username.
+          image: ghcr.io/YOUR_GITHUB_USERNAME/portfolio-server:latest
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 5000
+              name: http
+
+          env:
+            - name: CLIENT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: portfolio-config
+                  key: CLIENT_URL
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: portfolio-config
+                  key: PORT
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: portfolio-config
+                  key: NODE_ENV
+            # Name of the sandbox Docker image (must be pre-built on the VM)
+            - name: SANDBOX_IMAGE
+              value: "chetan-sandbox:latest"
+
+          # ── Resource limits ───────────────────────────────
+          # The free OCI VM (1 OCPU, 1GB RAM) is shared between:
+          #   - K3s system components   ~150MB
+          #   - portfolio-client        ~128MB
+          #   - portfolio-server        ~128MB
+          #   - sandbox containers      ~64MB each (max 5 at once)
+          # These limits keep everything within the free tier.
+          resources:
+            requests:
+              cpu: "50m"       # 5% of one core — very light at idle
+              memory: "128Mi"
+            limits:
+              cpu: "300m"      # burst up to 30% when busy
+              memory: "256Mi"
+
+          # ── Health checks ─────────────────────────────────
+          # K3s pings /health. If it fails 3 times, pod restarts.
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          volumeMounts:
+            # ── Docker socket ─────────────────────────────
+            # This lets the server spawn sandbox containers.
+            # It connects to the Docker daemon running on the host VM.
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+
+            # ── Resume PDF ────────────────────────────────
+            # Stored as a K8s Secret (binary data).
+            # "kubectl create secret generic resume-pdf --from-file=..."
+            - name: resume-volume
+              mountPath: /app/public
+
+      volumes:
+        # The Docker daemon's Unix socket on the host VM
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
+
+        # Resume PDF injected as a Kubernetes Secret
+        - name: resume-volume
+          secret:
+            secretName: resume-pdf
+            optional: true   # server still works without a resume
+
+---
+# ── Service ───────────────────────────────────────────────────
+# A Service gives the server Pod a stable internal DNS name.
+# Other pods (and the Ingress) reach it as "portfolio-server:5000"
+# regardless of which node the pod is on or what its IP is.
+apiVersion: v1
+kind: Service
+metadata:
+  name: portfolio-server
+  namespace: portfolio
+spec:
+  selector:
+    app: portfolio-server
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000

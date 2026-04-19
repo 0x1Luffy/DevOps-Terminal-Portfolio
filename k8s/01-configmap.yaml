@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: portfolio-config
+  namespace: portfolio
+data:
+  # The public URL where the frontend is served
+  CLIENT_URL: "https://chetancodes.dpdns.org"
+  # Internal service name the client calls for API/WS
+  # (browser hits the same domain, Ingress routes /api and /socket.io to server)
+  NEXT_PUBLIC_SERVER_URL: "https://chetancodes.dpdns.org"
+  NODE_ENV: "production"
+  PORT: "5000"

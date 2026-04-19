@@ -1,0 +1,57 @@
+# ─────────────────────────────────────────────────────────────────
+#  SANDBOX SECURITY — ResourceQuota + LimitRange
+#
+#  What this does:
+#    Puts hard ceilings on the entire "portfolio" namespace.
+#    Even if someone tried to modify the K8s manifests or exploit
+#    the Docker socket, these namespace-level limits cap what
+#    resources can be consumed on your free-tier VM.
+#
+#  ResourceQuota  — total resource budget for the whole namespace
+#  LimitRange     — default + max limits for individual containers
+# ─────────────────────────────────────────────────────────────────
+
+# Total budget for the "portfolio" namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: portfolio-quota
+  namespace: portfolio
+spec:
+  hard:
+    # Max CPU across ALL pods in this namespace
+    requests.cpu: "500m"
+    limits.cpu: "1000m"
+    # Max RAM across ALL pods in this namespace
+    requests.memory: "512Mi"
+    limits.memory: "768Mi"
+    # Max number of pods (prevents runaway container spawning)
+    pods: "20"
+    # Max number of services, secrets, configmaps
+    services: "5"
+    secrets: "10"
+    configmaps: "5"
+
+---
+# Default and max limits for individual containers
+# Any container that doesn't specify limits gets these defaults
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: portfolio-limits
+  namespace: portfolio
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: "100m"
+        memory: "128Mi"
+      defaultRequest:
+        cpu: "50m"
+        memory: "64Mi"
+      max:
+        cpu: "500m"
+        memory: "512Mi"
+      min:
+        cpu: "10m"
+        memory: "16Mi"

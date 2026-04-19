@@ -1,0 +1,17 @@
+═══════════════════════════════════════════════
+  ABOUT CHETAN
+═══════════════════════════════════════════════
+
+  Name     :  Chetan
+  Role     :  DevOps Engineer
+  Location :  Mumbai, India
+
+  Passionate DevOps Engineer with 1+ years of
+  experience building scalable infrastructure,
+  automating CI/CD pipelines, and containerizing
+  applications at scale.
+
+  Run ./experience.sh  to see my work history
+  Run ./projects.sh    to see my projects
+  Run ./skills.sh      to see tech skills
+  Run ./deploy.sh      to see a live CI/CD run

@@ -1,0 +1,95 @@
+# ─────────────────────────────────────────────────────────────────
+#  PORTFOLIO CLIENT — Deployment + Service
+#
+#  What this does:
+#    Runs the Next.js frontend (the visual landing page + terminal UI).
+#    Browsers connect here first. The terminal UI then opens a
+#    WebSocket connection to the server via Socket.IO.
+#
+#  Note on NEXT_PUBLIC_SERVER_URL:
+#    This env var is baked into the Next.js build at compile time
+#    (it's a NEXT_PUBLIC_ variable). The browser uses this URL to
+#    connect to the Socket.IO server. Since both client and server
+#    are behind the same Ingress (same domain), this is just your
+#    public domain — the Ingress routes /socket.io to the server.
+# ─────────────────────────────────────────────────────────────────
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portfolio-client
+  namespace: portfolio
+  labels:
+    app: portfolio-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: portfolio-client
+  template:
+    metadata:
+      labels:
+        app: portfolio-client
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+
+      containers:
+        - name: client
+          # ── CHANGE THIS ──────────────────────────────────
+          image: ghcr.io/YOUR_GITHUB_USERNAME/portfolio-client:latest
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 3000
+              name: http
+
+          env:
+            - name: NEXT_PUBLIC_SERVER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: portfolio-config
+                  key: NEXT_PUBLIC_SERVER_URL
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: portfolio-config
+                  key: NODE_ENV
+
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "384Mi"
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 30
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portfolio-client
+  namespace: portfolio
+spec:
+  selector:
+    app: portfolio-client
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000

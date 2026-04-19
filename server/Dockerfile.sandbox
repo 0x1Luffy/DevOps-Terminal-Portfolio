@@ -1,0 +1,46 @@
+# ── Sandbox Container for Portfolio SSH Sessions ──────────
+# Build: docker build -t chetan-portfolio-sandbox -f Dockerfile.sandbox .
+
+FROM ubuntu:22.04
+
+# Avoid interactive prompts during build
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install minimal tools
+RUN apt-get update && apt-get install -y \
+    bash \
+    curl \
+    vim \
+    tree \
+    htop \
+    git \
+    python3 \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -m -s /bin/bash -u 1001 chetan
+
+# Create portfolio files
+RUN mkdir -p /home/chetan
+
+# ── experience.sh ────────────────────────────────────────
+COPY sandbox-scripts/experience.sh /home/chetan/experience.sh
+COPY sandbox-scripts/projects.sh   /home/chetan/projects.sh
+COPY sandbox-scripts/skills.sh     /home/chetan/skills.sh
+COPY sandbox-scripts/education.sh  /home/chetan/education.sh
+COPY sandbox-scripts/deploy.sh     /home/chetan/deploy.sh
+COPY sandbox-scripts/about.txt     /home/chetan/about.txt
+COPY sandbox-scripts/contact.txt   /home/chetan/contact.txt
+COPY sandbox-scripts/.bashrc       /home/chetan/.bashrc
+
+RUN chmod +x /home/chetan/*.sh \
+    && chown -R chetan:chetan /home/chetan
+
+# Restrict: no sudo, no su
+RUN chmod 750 /bin/su || true
+
+USER chetan
+WORKDIR /home/chetan
+
+CMD ["/bin/bash", "--login"]

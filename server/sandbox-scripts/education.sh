@@ -1,0 +1,12 @@
+#!/bin/bash
+echo ""
+echo -e "\033[1;36m══════════════════════════════════════════════════\033[0m"
+echo -e "  \033[1;33m🎓 EDUCATION & CERTIFICATIONS\033[0m"
+echo -e "\033[1;36m══════════════════════════════════════════════════\033[0m"
+echo ""
+echo -e "\033[1;37mB.E. Computer Engineering\033[0m"
+echo -e "\033[32m  University of Mumbai · 2022-2024 · CGPA 8.23\033[0m"
+echo ""
+echo -e "\033[1;37mCertifications\033[0m"
+echo -e "  \033[33m[✓]\033[0m AWS Certified Cloud Practitioner – Professional"
+echo ""
