@@ -262,7 +262,7 @@ In the `EASTER_EGGS` object in `processor.js`:
 
 ---
 
-## 📦 Tech Stack
+## 📦 Tech Stack .
 
 | Layer | Technology |
 |---|---|
