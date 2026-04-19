@@ -11,7 +11,7 @@ env:
 jobs:
   build-and-push:
     name: Build Docker images
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest        # ubuntu-latest is linux/amd64 — matches your OCI VM
     permissions:
       contents: read
       packages: write
@@ -30,11 +30,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ── Build server ────────────────────────────────────
       - name: Build & push server image
         uses: docker/build-push-action@v5
         with:
           context: ./server
+          platforms: linux/amd64      # ← explicitly target your OCI VM's arch
           push: true
           tags: |
             ${{ env.IMAGE_PREFIX }}/portfolio-server:latest
@@ -42,11 +42,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ── Build client ────────────────────────────────────
       - name: Build & push client image
         uses: docker/build-push-action@v5
         with:
           context: ./client
+          platforms: linux/amd64      # ← explicitly target your OCI VM's arch
           push: true
           tags: |
             ${{ env.IMAGE_PREFIX }}/portfolio-client:latest
@@ -65,7 +65,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # SSH into OCI VM and apply manifests
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -73,10 +72,8 @@ jobs:
           username: ${{ secrets.OCI_VM_USER }}
           key:      ${{ secrets.OCI_SSH_KEY }}
           script: |
-            # Pull latest images
             sudo k3s kubectl rollout restart deployment/portfolio-server -n portfolio
             sudo k3s kubectl rollout restart deployment/portfolio-client -n portfolio
-            # Wait for rollout
             sudo k3s kubectl rollout status deployment/portfolio-server -n portfolio --timeout=120s
             sudo k3s kubectl rollout status deployment/portfolio-client -n portfolio --timeout=120s
             echo "✅ Deploy complete"
