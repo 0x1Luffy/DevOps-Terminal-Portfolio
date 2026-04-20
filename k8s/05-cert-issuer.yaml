@@ -14,14 +14,13 @@ spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
     # CHANGE THIS to your real email — Let's Encrypt uses it for expiry alerts
-    email: your-email@example.com
+    email: chetankesare06@gmail.com
     privateKeySecretRef:
       name: letsencrypt-prod-account-key
     solvers:
-      - http01:
-          ingress:
-            class: traefik
-
+    - http01:
+        ingress:
+          class: traefik
 ---
 # Staging issuer — use this FIRST to avoid rate limits while testing
 apiVersion: cert-manager.io/v1
@@ -31,10 +30,10 @@ metadata:
 spec:
   acme:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: your-email@example.com
+    email: chetankesare06@gmail.com
     privateKeySecretRef:
       name: letsencrypt-staging-account-key
     solvers:
-      - http01:
-          ingress:
-            class: traefik
+    - http01:
+        ingress:
+          class: traefik

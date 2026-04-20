@@ -43,95 +43,94 @@ spec:
         runAsGroup: 1000
 
       containers:
-        - name: server
-          # ── CHANGE THIS ──────────────────────────────────
-          # After you push your image (see README-SETUP.md Step 4),
-          # replace YOUR_GITHUB_USERNAME with your GitHub username.
-          image: ghcr.io/YOUR_GITHUB_USERNAME/portfolio-server:latest
-          imagePullPolicy: Always
+      - name: server
+        # ── CHANGE THIS ──────────────────────────────────
+        # After you push your image (see README-SETUP.md Step 4),
+        # replace YOUR_GITHUB_USERNAME with your GitHub username.
+        image: ghcr.io/0x1luffy/portfolio-server:latest
+        imagePullPolicy: Always
 
-          ports:
-            - containerPort: 5000
-              name: http
+        ports:
+        - containerPort: 5000
+          name: http
 
-          env:
-            - name: CLIENT_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: portfolio-config
-                  key: CLIENT_URL
-            - name: PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: portfolio-config
-                  key: PORT
-            - name: NODE_ENV
-              valueFrom:
-                configMapKeyRef:
-                  name: portfolio-config
-                  key: NODE_ENV
-            # Name of the sandbox Docker image (must be pre-built on the VM)
-            - name: SANDBOX_IMAGE
-              value: "chetan-sandbox:latest"
+        env:
+        - name: CLIENT_URL
+          valueFrom:
+            configMapKeyRef:
+              name: portfolio-config
+              key: CLIENT_URL
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: portfolio-config
+              key: PORT
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: portfolio-config
+              key: NODE_ENV
+        # Name of the sandbox Docker image (must be pre-built on the VM)
+        - name: SANDBOX_IMAGE
+          value: "chetan-sandbox:latest"
 
-          # ── Resource limits ───────────────────────────────
-          # The free OCI VM (1 OCPU, 1GB RAM) is shared between:
-          #   - K3s system components   ~150MB
-          #   - portfolio-client        ~128MB
-          #   - portfolio-server        ~128MB
-          #   - sandbox containers      ~64MB each (max 5 at once)
-          # These limits keep everything within the free tier.
-          resources:
-            requests:
-              cpu: "50m"       # 5% of one core — very light at idle
-              memory: "128Mi"
-            limits:
-              cpu: "300m"      # burst up to 30% when busy
-              memory: "256Mi"
+        # ── Resource limits ───────────────────────────────
+        # The free OCI VM (1 OCPU, 1GB RAM) is shared between:
+        #   - K3s system components   ~150MB
+        #   - portfolio-client        ~128MB
+        #   - portfolio-server        ~128MB
+        #   - sandbox containers      ~64MB each (max 5 at once)
+        # These limits keep everything within the free tier.
+        resources:
+          requests:
+            cpu: "50m" # 5% of one core — very light at idle
+            memory: "128Mi"
+          limits:
+            cpu: "300m" # burst up to 30% when busy
+            memory: "256Mi"
 
-          # ── Health checks ─────────────────────────────────
-          # K3s pings /health. If it fails 3 times, pod restarts.
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 5000
-            initialDelaySeconds: 15
-            periodSeconds: 20
-            failureThreshold: 3
+        # ── Health checks ─────────────────────────────────
+        # K3s pings /health. If it fails 3 times, pod restarts.
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          failureThreshold: 3
 
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 5000
-            initialDelaySeconds: 5
-            periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
 
-          volumeMounts:
-            # ── Docker socket ─────────────────────────────
-            # This lets the server spawn sandbox containers.
-            # It connects to the Docker daemon running on the host VM.
-            - name: docker-socket
-              mountPath: /var/run/docker.sock
+        volumeMounts:
+        # ── Docker socket ─────────────────────────────
+        # This lets the server spawn sandbox containers.
+        # It connects to the Docker daemon running on the host VM.
+        - name: docker-socket
+          mountPath: /var/run/docker.sock
 
-            # ── Resume PDF ────────────────────────────────
-            # Stored as a K8s Secret (binary data).
-            # "kubectl create secret generic resume-pdf --from-file=..."
-            - name: resume-volume
-              mountPath: /app/public
+        # ── Resume PDF ────────────────────────────────
+        # Stored as a K8s Secret (binary data).
+        # "kubectl create secret generic resume-pdf --from-file=..."
+        - name: resume-volume
+          mountPath: /app/public
 
       volumes:
-        # The Docker daemon's Unix socket on the host VM
-        - name: docker-socket
-          hostPath:
-            path: /var/run/docker.sock
-            type: Socket
+      # The Docker daemon's Unix socket on the host VM
+      - name: docker-socket
+        hostPath:
+          path: /var/run/docker.sock
+          type: Socket
 
-        # Resume PDF injected as a Kubernetes Secret
-        - name: resume-volume
-          secret:
-            secretName: resume-pdf
-            optional: true   # server still works without a resume
-
+      # Resume PDF injected as a Kubernetes Secret
+      - name: resume-volume
+        secret:
+          secretName: resume-pdf
+          optional: true # server still works without a resume
 ---
 # ── Service ───────────────────────────────────────────────────
 # A Service gives the server Pod a stable internal DNS name.
@@ -146,6 +145,6 @@ spec:
   selector:
     app: portfolio-server
   ports:
-    - name: http
-      port: 5000
-      targetPort: 5000
+  - name: http
+    port: 5000
+    targetPort: 5000

@@ -5,9 +5,12 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+
+ARG NEXT_PUBLIC_SERVER_URL
+ENV NEXT_PUBLIC_SERVER_URL=$NEXT_PUBLIC_SERVER_URL
+
 RUN npm run build
 
-# ── Production stage ──────────────────────────────────
 FROM node:20-alpine AS runner
 
 WORKDIR /app

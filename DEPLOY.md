@@ -751,3 +751,8 @@ QUICK REFERENCE — COMMANDS YOU WILL USE OFTEN
 
   SSH into your VM:
     ssh ubuntu@YOUR_VM_IP
+    
+    
+    
+    
+    /home/luffy/Downloads/automation_playground_key
