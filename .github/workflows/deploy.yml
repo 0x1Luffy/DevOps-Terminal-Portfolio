@@ -5,13 +5,12 @@ on:
     branches: [master]
 
 env:
-  REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/0x1luffy
 
 jobs:
   build-and-push:
     name: Build Docker images
-    runs-on: ubuntu-latest        # ubuntu-latest is linux/amd64 — matches your OCI VM
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -34,7 +33,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./server
-          platforms: linux/amd64      # ← explicitly target your OCI VM's arch
+          platforms: linux/amd64
           push: true
           tags: |
             ${{ env.IMAGE_PREFIX }}/portfolio-server:latest
@@ -46,7 +45,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./client
-          platforms: linux/amd64      # ← explicitly target your OCI VM's arch
+          platforms: linux/amd64
           push: true
           tags: |
             ${{ env.IMAGE_PREFIX }}/portfolio-client:latest
@@ -72,8 +71,8 @@ jobs:
           username: ${{ secrets.OCI_VM_USER }}
           key:      ${{ secrets.OCI_SSH_KEY }}
           script: |
-            sudo k3s kubectl rollout restart deployment/portfolio-server -n portfolio
-            sudo k3s kubectl rollout restart deployment/portfolio-client -n portfolio
-            sudo k3s kubectl rollout status deployment/portfolio-server -n portfolio --timeout=120s
-            sudo k3s kubectl rollout status deployment/portfolio-client -n portfolio --timeout=120s
+            kubectl rollout restart deployment/portfolio-server -n portfolio
+            kubectl rollout restart deployment/portfolio-client -n portfolio
+            kubectl rollout status deployment/portfolio-server -n portfolio --timeout=120s
+            kubectl rollout status deployment/portfolio-client -n portfolio --timeout=120s
             echo "✅ Deploy complete"
